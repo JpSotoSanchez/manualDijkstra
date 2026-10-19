@@ -1,46 +1,99 @@
 import numpy as np
 
-class Graph:
-    nodos = []
-    conexiones = []
 
-    def __init__(self):
-        pass
-class Node: 
-    nombre = ""
-    costoDeCamino = np.inf
-    edges = []
-    vieneDe = any
-    
-    def __init__(self, nombre):
-        self.nombre = nombre
+class Node:
+    """A graph node with a label, its connections and its Dijkstra state."""
+
+    def __init__(self, name):
+        self.name = name
+        self.path_cost = np.inf   
+        self.edges = []          
+        self.came_from = None     
+        self.visited = False
+
+    def __repr__(self):
+        return f"Node({self.name})"
+
 
 class Edge:
-    nodoPrimero = any
-    nodoSegundo = any
-    peso = 0
 
-    def __init__(self, nodo1, nodo2, costo):
-        self.nodoPrimero = nodo1
-        self.nodoSegundo = nodo2
-        self.peso = costo
-    
+    def __init__(self, first_node, second_node, weight):
+        if weight < 0:
+            raise ValueError("Dijkstra does not support negative weights")
+        self.first_node = first_node
+        self.second_node = second_node
+        self.weight = weight
 
-def agregarConexión(nodoEntrada, nodoLlegada, costo):
-    edge = Edge(nodoEntrada, nodoLlegada, costo)
-    nodoEntrada.edges.append(edge)
-    nodoLlegada.edges.append(edge)
+    def other(self, node):
+        return self.second_node if node is self.first_node else self.first_node
+
+    def __repr__(self):
+        return f"Edge({self.first_node.name}-{self.second_node.name}, {self.weight})"
+
+
+class Graph:
+
+    def __init__(self):
+        self.nodes = []
+        self.connections = []
+
+    def add_node(self, name):
+        node = Node(name)
+        self.nodes.append(node)
+        return node
+
+    def add_connection(self, node_a, node_b, weight):
+        edge = add_connection(node_a, node_b, weight)
+        self.connections.append(edge)
+        return edge
+
+    def reset(self):
+        for node in self.nodes:
+            node.path_cost = np.inf
+            node.came_from = None
+            node.visited = False
+
+
+def add_connection(node_a, node_b, weight):
+    edge = Edge(node_a, node_b, weight)
+    node_a.edges.append(edge)
+    node_b.edges.append(edge)
     return edge
 
-def encontrarMenorCosto(lista):
-    min = np.inf + 1.0
-    nodo = -1
-    for i in range (0, len(lista)):
-        if lista[i].costoDeCamino < min:
-            nodo = i
-            min = lista[i].costoDeCamino
-    return nodo
 
-def actualizarCostos(edge, sumaActual):
-    edge.nodoPrimero.costoDeCamino = edge.peso + sumaActual
-    edge.nodoSegundo.costoDeCamino = edge.peso + sumaActual
+def find_lowest_cost(node_list):
+
+    lowest = np.inf
+    index = -1
+    for i in range(len(node_list)):
+        if node_list[i].path_cost < lowest:
+            lowest = node_list[i].path_cost
+            index = i
+    return index
+
+
+def mark_visited(node, unvisited, visited):
+    unvisited.remove(node)
+    visited.append(node)
+    node.visited = True
+
+
+def update_costs(current_node):
+    for edge in current_node.edges:
+        neighbor = edge.other(current_node)
+        if neighbor.visited:
+            continue
+        new_cost = current_node.path_cost + edge.weight
+        if new_cost < neighbor.path_cost:
+            neighbor.path_cost = new_cost
+            neighbor.came_from = current_node
+
+
+def rebuild_path(end_node):
+    path = []
+    node = end_node
+    while node is not None:
+        path.append(node)
+        node = node.came_from
+    path.reverse()
+    return path
